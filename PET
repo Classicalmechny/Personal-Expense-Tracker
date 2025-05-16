@@ -1,0 +1,105 @@
+import csv
+import datetime
+import matplotlib.pyplot as plt
+import os
+
+FILE_NAME = "expenses.csv"
+FIELDS = ['Date', 'Category', 'Amount', 'Description']
+
+def initialize():
+    """Create CSV file with headers if not exists."""
+    if not os.path.exists(FILE_NAME):
+        with open(FILE_NAME, mode='w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=FIELDS)
+            writer.writeheader()
+
+def add_expense():
+    date = input("Enter date (YYYY-MM-DD) [default today]: ").strip()
+    if not date:
+        date = datetime.date.today().isoformat()
+    else:
+        try:
+            datetime.datetime.strptime(date, '%Y-%m-%d')
+        except ValueError:
+            print("Invalid date format.")
+            return
+
+    category = input("Enter category (Food, Transport, etc.): ").strip()
+    try:
+        amount = float(input("Enter amount spent: ").strip())
+    except ValueError:
+        print("Invalid amount.")
+        return
+    description = input("Enter description (optional): ").strip()
+
+    with open(FILE_NAME, mode='a', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=FIELDS)
+        writer.writerow({
+            'Date': date,
+            'Category': category,
+            'Amount': amount,
+            'Description': description
+        })
+    print("Expense added successfully.")
+
+def view_expenses():
+    print("\nAll Expenses:")
+    with open(FILE_NAME, mode='r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            print(f"{row['Date']} | {row['Category']} | ₹{row['Amount']} | {row['Description']}")
+
+def monthly_summary():
+    import pandas as pd
+    df = pd.read_csv(FILE_NAME)
+    df['Date'] = pd.to_datetime(df['Date'])
+    df['Month'] = df['Date'].dt.to_period('M')
+
+    summary = df.groupby('Month')['Amount'].sum()
+    print("\nMonthly Expense Summary:")
+    print(summary)
+
+    # Plotting
+    summary.plot(kind='bar', title='Monthly Expenses', ylabel='Amount (₹)')
+    plt.tight_layout()
+    plt.show()
+
+def category_summary():
+    import pandas as pd
+    df = pd.read_csv(FILE_NAME)
+    summary = df.groupby('Category')['Amount'].sum()
+    print("\nExpense by Category:")
+    print(summary)
+
+    # Plot pie chart
+    summary.plot.pie(autopct='%1.1f%%', title='Expenses by Category')
+    plt.ylabel('')
+    plt.show()
+
+def main():
+    initialize()
+    while True:
+        print("\nPersonal Expense Tracker")
+        print("1. Add Expense")
+        print("2. View All Expenses")
+        print("3. Monthly Expense Summary")
+        print("4. Expense by Category")
+        print("5. Exit")
+
+        choice = input("Choose an option: ").strip()
+        if choice == '1':
+            add_expense()
+        elif choice == '2':
+            view_expenses()
+        elif choice == '3':
+            monthly_summary()
+        elif choice == '4':
+            category_summary()
+        elif choice == '5':
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please select 1-5.")
+
+if __name__ == "__main__":
+    main()
